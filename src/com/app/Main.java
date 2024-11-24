@@ -61,7 +61,7 @@ public class Main {
     }
 
     // Daftar menu
-    private static final Map<String, Menu> menuMap = new HashMap<>();
+    private static Map<String, Menu> menuMap = new LinkedHashMap<>();
     static {
         menuMap.put("nasi goreng", new Menu("Nasi Goreng", 15000, "makanan"));
         menuMap.put("mie goreng", new Menu("Mie Goreng", 15000, "makanan"));
@@ -75,28 +75,277 @@ public class Main {
         menuMap.put("air mineral", new Menu("Air Mineral", 3000, "minuman"));
     }
 
+    public static void home(Scanner scanner) {
+        System.out.println("==== Open Food ====");
+        System.out.println("1. Pemesanan");
+        System.out.println("2. Manajemen Menu");
+        System.out.println("0. Keluar");
+        System.out.print("Pilih Menu: ");
+
+        String input = scanner.nextLine().trim();
+
+        try {
+            int choice = Integer.parseInt(input);
+            if (choice == 1) {
+                displayMenu();
+                handleOrder(scanner);
+            } else if (choice == 2) {
+                manageMenu(scanner);
+            }
+            else if(choice == 0){
+                return;
+            }
+            else {
+                System.out.println("Menu tidak ada. Silakan coba lagi.");
+                home(scanner);
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Input harus berupa angka. Silakan coba lagi.");
+            home(scanner);
+        }
+    }
+
+    //Manajemen Menu
+    public static void manageMenu(Scanner scanner){
+        while (true) {
+            System.out.println("\n==== Manajemen Menu ====");
+            System.out.println("1. Tambah Menu");
+            System.out.println("2. Ubah Harga Menu");
+            System.out.println("3. Hapus Menu");
+            System.out.println("0. Kembali ke Home");
+            System.out.println("00. Keluar");
+            System.out.print("Pilih Opsi: ");
+
+            String input = scanner.nextLine().trim();
+            switch (input) {
+                case "1":
+                    addMenu(scanner);
+                    break;
+                case "2":
+                    updateMenuPrice(scanner);
+                    break;
+                case "3":
+                    deleteMenu(scanner);
+                    break;
+                case "0":
+                    home(scanner);
+                    return;
+                case "00":
+                    return;
+                default:
+                    System.out.println("Opsi tidak valid. Silakan coba lagi.");
+            }
+        }
+    };
+
+    public static void addMenu(Scanner scanner) {
+        System.out.println("\n==== Tambah Menu ====");
+
+        String name = null;
+        int price = 0;
+        String category = null;
+
+        int step = 1;
+
+        while (true) {
+            switch (step) {
+                case 1:
+                    name = inputWithBack(scanner, "Masukkan Nama Menu (atau ketik '0' untuk kembali): ");
+                    if (name == null) return;
+                    step = 2;
+                    break;
+
+                case 2:
+                    String priceInput = inputWithBack(scanner, "Masukkan Harga Menu (atau ketik '0' untuk kembali ke Nama Menu): ");
+                    if (priceInput == null) {
+                        step = 1;
+                        break;
+                    }
+                    try {
+                        price = Integer.parseInt(priceInput.trim());
+                        step = 3;
+                    } catch (NumberFormatException e) {
+                        System.out.println("Harga harus berupa angka. Silakan coba lagi.");
+                    }
+                    break;
+
+                case 3:
+                    category = inputWithBack(scanner, "Masukkan kategori (makanan/minuman, ketik '0' untuk kembali ke Harga Menu): ");
+                    if (category == null) {
+                        step = 2;
+                        break;
+                    }
+                    step = 4;
+                    break;
+
+                case 4:
+                    System.out.println("\n==== Konfirmasi Menu ====");
+                    System.out.println("Nama Menu : " + capitalizeFirst(name));
+                    System.out.println("Harga Menu: " + formatIDR(price));
+                    System.out.println("Kategori  : " + capitalizeFirst(category));
+                    String confirm = inputWithBack(scanner, "Ketik 'y' untuk simpan, '0' untuk kembali ke Kategori, atau 'n' untuk batal: ");
+                    if (confirm == null) {
+                        step = 3;
+                        break;
+                    }
+                    if (confirm.equalsIgnoreCase("y")) {
+                        menuMap.put(name.toLowerCase(), new Menu(capitalizeFirst(name), price, category.toLowerCase()));
+                        System.out.println("Menu berhasil ditambahkan!");
+                        return;
+                    } else if (confirm.equalsIgnoreCase("n")) {
+                        System.out.println("Penambahan menu dibatalkan.");
+                        return;
+                    } else {
+                        System.out.println("Input tidak valid. Silakan coba lagi.");
+                    }
+                    break;
+            }
+        }
+    }
+
+    private static String inputWithBack(Scanner scanner, String prompt) {
+        System.out.print(prompt);
+        String input = scanner.nextLine().trim();
+
+        if (input.equals("0")) {
+            return null;
+        }
+        return input;
+    }
+
+    //Update Data
+    public static void updateMenuPrice(Scanner scanner) {
+        while (true) {
+            System.out.println("\n==== Ubah Harga Menu ====");
+            System.out.println("Daftar Menu:");
+
+            List<Menu> menuList = new ArrayList<>(menuMap.values());
+            for (int i = 0; i < menuList.size(); i++) {
+                Menu menu = menuList.get(i);
+                System.out.println((i + 1) + ". " + capitalizeFirst(menu.getName()) + " (" + capitalizeFirst(menu.getCategory()) + ") - " + formatIDR(menu.getPrice()));
+            }
+
+            System.out.println("\n0. Kembali ke Manajemen Menu");
+            System.out.print("Masukkan nomor menu yang ingin diubah harganya: ");
+
+            String input = scanner.nextLine().trim();
+
+            if (input.equals("0")) {
+                return;
+            }
+
+            try {
+                int menuIndex = Integer.parseInt(input) - 1;
+
+                if (menuIndex < 0 || menuIndex >= menuList.size()) {
+                    System.out.println("Nomor tidak valid. Silakan coba lagi.");
+                    continue;
+                }
+
+                // Ambil menu berdasarkan nomor
+                Menu menuToUpdate = menuList.get(menuIndex);
+                System.out.println("Menu Dipilih: " + capitalizeFirst(menuToUpdate.getName()) + " - Harga Saat Ini: " + formatIDR(menuToUpdate.getPrice()));
+
+                // Masukkan harga baru
+                System.out.print("Masukkan Harga Baru (atau ketik '0' untuk batal): ");
+                String newPriceInput = scanner.nextLine().trim();
+
+                if (newPriceInput.equals("0")) {
+                    System.out.println("Perubahan harga dibatalkan.");
+                    continue;
+                }
+
+                int newPrice = Integer.parseInt(newPriceInput);
+                if (newPrice < 0) {
+                    System.out.println("Harga tidak boleh negatif. Silakan coba lagi.");
+                    continue;
+                }
+
+                // Update harga menu
+                menuMap.put(menuToUpdate.getName().toLowerCase(), new Menu(menuToUpdate.getName(), newPrice, menuToUpdate.getCategory()));
+                System.out.println("Harga berhasil diperbarui untuk " + capitalizeFirst(menuToUpdate.getName()) + " menjadi " + formatIDR(newPrice) + "!");
+            } catch (NumberFormatException e) {
+                System.out.println("Input harus berupa angka. Silakan coba lagi.");
+            }
+        }
+    }
+
+    //Delete Menu
+    public static void deleteMenu(Scanner scanner) {
+        while (true) {
+            System.out.println("\n==== Hapus Menu ====");
+            System.out.println("Daftar Menu:");
+            List<Menu> menuList = new ArrayList<>(menuMap.values());
+            for (int i = 0; i < menuList.size(); i++) {
+                Menu menu = menuList.get(i);
+                System.out.println((i + 1) + ". " + capitalizeFirst(menu.getName()) + " (" + capitalizeFirst(menu.getCategory()) + ") - " + formatIDR(menu.getPrice()));
+            }
+
+            System.out.println("\n0. Kembali ke Manajemen Menu");
+            System.out.print("Masukkan nomor menu yang ingin dihapus: ");
+
+            String input = scanner.nextLine().trim();
+
+            // Kembali ke Manajemen Menu jika input "0"
+            if (input.equals("0")) {
+                return;
+            }
+
+            try {
+                int menuIndex = Integer.parseInt(input) - 1;
+
+                if (menuIndex < 0 || menuIndex >= menuList.size()) {
+                    System.out.println("Nomor tidak valid. Silakan coba lagi.");
+                    continue;
+                }
+
+                // Konfirmasi penghapusan
+                Menu menuToDelete = menuList.get(menuIndex);
+                System.out.println("\nApakah Anda yakin ingin menghapus menu berikut?");
+                System.out.println("Nama: " + capitalizeFirst(menuToDelete.getName()));
+                System.out.println("Kategori: " + capitalizeFirst(menuToDelete.getCategory()));
+                System.out.println("Harga: " + formatIDR(menuToDelete.getPrice()));
+                System.out.print("Ketik 'y' untuk menghapus atau 'n' untuk batal: ");
+
+                String confirmation = scanner.nextLine().trim().toLowerCase();
+                if (confirmation.equals("y")) {
+                    menuMap.remove(menuToDelete.getName().toLowerCase());
+                    System.out.println("Menu berhasil dihapus!");
+                } else {
+                    System.out.println("Penghapusan dibatalkan.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Input harus berupa angka. Silakan coba lagi.");
+            }
+        }
+    }
+
     // Menampilkan menu makanan dan minuman
     public static void displayMenu() {
-        int nomor = 1;
         System.out.println("===============================");
         System.out.println("       Menu Makanan           ");
         System.out.println("===============================");
-        System.out.println(nomor++ +". "+"Nasi Goreng - " + formatIDR(menuMap.get("nasi goreng").getPrice()));
-        System.out.println(nomor++ +". "+"Mie Goreng - " + formatIDR(menuMap.get("mie goreng").getPrice()));
-        System.out.println(nomor++ +". "+"Mie Rebus - " + formatIDR(menuMap.get("mie rebus").getPrice()));
-        System.out.println(nomor++ +". "+"Kwetiau Goreng - " + formatIDR(menuMap.get("kwetiau goreng").getPrice()));
-        System.out.println(nomor++ +". "+"Kwetiau Rebus - " + formatIDR(menuMap.get("kwetiau rebus").getPrice()));
-        System.out.println("===============================");
+        int counter = 1;
+        for (Menu menu : menuMap.values()) {
+            if (menu.getCategory().equalsIgnoreCase("makanan")) {
+                System.out.println(counter + ". " + capitalizeFirst(menu.getName()) + " - " + formatIDR(menu.getPrice()));
+                counter++;
+            }
+        }
 
-        nomor = 1;
+        System.out.println("===============================");
         System.out.println("       Menu Minuman           ");
         System.out.println("===============================");
-        System.out.println(nomor++ +". "+"Es Teh - " + formatIDR(menuMap.get("es teh").getPrice()));
-        System.out.println(nomor++ +". "+"Es Jeruk - " + formatIDR(menuMap.get("es jeruk").getPrice()));
-        System.out.println(nomor++ +". "+"Jus Alpukat - " + formatIDR(menuMap.get("jus alpukat").getPrice()));
-        System.out.println(nomor++ +". "+"Jus Mangga - " + formatIDR(menuMap.get("jus mangga").getPrice()));
-        System.out.println(nomor++ +". "+"Air Mineral - " + formatIDR(menuMap.get("air mineral").getPrice()));
+        counter = 1;
+        for (Menu menu : menuMap.values()) {
+            if (menu.getCategory().equalsIgnoreCase("minuman")) {
+                System.out.println(counter + ". " + capitalizeFirst(menu.getName()) + " - " + formatIDR(menu.getPrice()));
+                counter++;
+            }
+        }
         System.out.println("===============================");
+        System.out.println("0. Home");
+        System.out.println("00. Keluar");
     }
 
     //Pesan Menu
@@ -106,7 +355,7 @@ public class Main {
         List<Integer> orderQuantities = new ArrayList<>();
         List<String> minumanDipesan = new ArrayList<>();
         int totalCost = 0;
-        int maxOrder = 4;
+//        int maxOrder = 4;
 
         while (true) {
             System.out.print("Masukkan Item Pesanan: ");
@@ -120,13 +369,22 @@ public class Main {
                 break;
             }
 
-            if (orderItems.size() >= maxOrder) {
-                System.out.println("Anda sudah memesan maksimal " + maxOrder + " item. Pesanan telah ditutup.");
-                break;
+            if (input.equalsIgnoreCase("0")) {
+                home(scanner);
+                return;
             }
 
+            if (input.equalsIgnoreCase("00")) {
+                return;
+            }
+
+//            if (orderItems.size() >= maxOrder) {
+//                System.out.println("Anda sudah memesan maksimal " + maxOrder + " item. Pesanan telah ditutup.");
+//                break;
+//            }
+
             String[] parts = input.split(" = ");
-            if (parts.length != 2) {
+            if (parts.length != 2 || parts[0].trim().isEmpty() || parts[1].trim().isEmpty()) {
                 System.out.println("Format salah. Gunakan format: Nama Menu = Jumlah Porsi");
                 continue;
             }
@@ -236,10 +494,7 @@ public class Main {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-
-        // Menampilkan menu makanan dan minuman tanpa menggunakan pengulangan
-        displayMenu();
-        handleOrder(scanner);
+        home(scanner);
     }
 
 }
